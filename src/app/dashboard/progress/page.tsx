@@ -34,6 +34,7 @@ export default async function ProgressPage() {
         recommendations: latestInsight.recommendations,
         summary: latestInsight.summary ?? "",
         generatedAt: latestInsight.generated_at,
+        source: (latestInsight.raw_response as { source?: "ai" | "fallback" } | null)?.source,
       }
     : null;
 
