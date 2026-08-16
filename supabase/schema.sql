@@ -319,11 +319,14 @@ alter table public.intervention_plans enable row level security;
 alter table public.announcements enable row level security;
 alter table public.contact_messages enable row level security;
 
--- profiles: readable by any signed-in user (names/avatars are shown across the
--- app — course teachers, class rosters, etc). Writable only by the owner or admin.
+-- profiles: publicly readable — teacher names/avatars/bios are shown on public
+-- pages (home "top teachers", course catalog, course detail instructor info)
+-- per spec, which anonymous visitors must be able to see. Contains no auth
+-- credentials (those live in Supabase's separate auth.users). Writable only
+-- by the owner or admin.
 drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles for select
-  using (auth.role() = 'authenticated');
+  using (true);
 
 drop policy if exists "profiles_insert_self" on public.profiles;
 create policy "profiles_insert_self" on public.profiles for insert

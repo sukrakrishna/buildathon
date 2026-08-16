@@ -19,6 +19,7 @@ export function InterventionPlanCard({
   recommendations,
   insightId,
   canManage,
+  initialPlan,
 }: {
   studentId: string;
   studentName: string;
@@ -28,11 +29,16 @@ export function InterventionPlanCard({
   recommendations: string[];
   insightId: string | null;
   canManage: boolean;
+  // Pass this when the viewer might not have an authenticated session that
+  // RLS would grant plan access to (e.g. a public read-only showcase) — skips
+  // the client-side fetch entirely and just renders what was fetched server-side.
+  initialPlan?: InterventionPlan | null;
 }) {
-  const [plan, setPlan] = useState<InterventionPlan | null | undefined>(undefined);
+  const [plan, setPlan] = useState<InterventionPlan | null | undefined>(initialPlan);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
+    if (initialPlan !== undefined) return;
     let cancelled = false;
     async function load() {
       const supabase = createClient();
@@ -49,6 +55,7 @@ export function InterventionPlanCard({
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
   function handleGenerate() {

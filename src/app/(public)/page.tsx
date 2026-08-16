@@ -37,23 +37,24 @@ export default async function HomePage() {
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-ai/30 bg-ai-soft px-3 py-1 text-xs font-medium text-ai">
               <Sparkles className="size-3.5" />
-              Now with an AI performance engine
+              AI early-warning system for schools
             </span>
             <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
-              Run your school with clarity, not spreadsheets.
+              Know which students are falling behind — before report cards do.
             </h1>
             <p className="mt-4 max-w-lg text-lg text-muted-foreground">
-              Courses, attendance, assignments, and exams in one place — plus an AI
-              engine that flags at-risk students and recommends what to study next.
+              EduPortal analyzes real attendance, assignment, and exam data to flag at-risk
+              students, explain exactly why with real evidence, and generate a trackable
+              intervention plan — automatically.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" asChild>
-                <Link href="/courses">
-                  Explore courses <ArrowRight />
+                <Link href="/demo">
+                  <Sparkles /> See the AI Risk Center — no login <ArrowRight />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/register">Get started free</Link>
+                <Link href="/courses">Explore courses</Link>
               </Button>
             </div>
           </div>

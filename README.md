@@ -111,7 +111,17 @@ Server Components fetch data directly from Supabase on the server; mutations go 
 
 ## Live demo
 
-> _TODO: add the deployed URL here once available._
+**[buildathonsukran.netlify.app](https://buildathonsukran.netlify.app)**
+
+The fastest path to the actual feature: **[/demo](https://buildathonsukran.netlify.app/demo)** — a public, read-only page showing a real seeded at-risk student's full AI Risk Center (risk level, evidence, trend, weak subjects, recommendations, and an in-progress 7-day intervention plan). No login required.
+
+To explore the rest of the platform (attendance, grading, admin console), the login page has one-click demo logins built in, or use these directly — same password for all:
+
+| Role | Email | Password |
+|---|---|---|
+| Student (at-risk — see the Risk Center) | `demo.student6@example.com` | `Demo1234!` |
+| Teacher | `demo.teacher1@example.com` | `Demo1234!` |
+| Admin (system-wide risk dashboard) | `demo.admin@example.com` | `Demo1234!` |
 
 ## Demo video
 

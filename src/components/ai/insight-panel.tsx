@@ -10,7 +10,7 @@ import { RiskBadge } from "@/components/ai/risk-badge";
 import { InterventionPlanCard } from "@/components/ai/intervention-plan-card";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { RiskLevel } from "@/types/database";
+import type { InterventionPlan, RiskLevel } from "@/types/database";
 import type { Factor, Trend } from "@/lib/ai/evidence";
 
 export interface InsightData {
@@ -37,11 +37,13 @@ export function InsightPanel({
   studentName,
   initialInsight,
   canRegenerate = true,
+  initialPlan,
 }: {
   studentId: string;
   studentName: string;
   initialInsight: InsightData | null;
   canRegenerate?: boolean;
+  initialPlan?: InterventionPlan | null;
 }) {
   const [insight, setInsight] = useState<InsightData | null>(initialInsight);
   const [loading, setLoading] = useState(!initialInsight && canRegenerate);
@@ -189,6 +191,7 @@ export function InsightPanel({
         recommendations={insight.recommendations}
         insightId={insight.insightId ?? null}
         canManage={canRegenerate}
+        initialPlan={initialPlan}
       />
 
       <p className="mt-4 flex items-start gap-1.5 text-xs text-muted-foreground">
