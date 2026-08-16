@@ -130,6 +130,25 @@ export type AiInsight = {
   generated_by: string | null;
 };
 
+export type InterventionTask = {
+  day: number;
+  title: string;
+  completed: boolean;
+  completed_at: string | null;
+};
+
+export type InterventionPlan = {
+  id: string;
+  student_id: string;
+  insight_id: string | null;
+  focus_subject: string | null;
+  risk_level_at_creation: RiskLevel | null;
+  tasks: InterventionTask[];
+  source: string;
+  created_by: string | null;
+  created_at: string;
+};
+
 export type Announcement = {
   id: string;
   title: string;
@@ -171,6 +190,7 @@ export type Database = {
       exams: Table<Exam, Partial<Exam> & { class_id: string; title: string }>;
       grades: Table<Grade, Partial<Grade> & { exam_id: string; student_id: string; score: number }>;
       ai_insights: Table<AiInsight, Partial<AiInsight> & { student_id: string }>;
+      intervention_plans: Table<InterventionPlan, Partial<InterventionPlan> & { student_id: string }>;
       announcements: Table<Announcement, Partial<Announcement> & { title: string; body: string }>;
       contact_messages: Table<ContactMessage, Partial<ContactMessage> & { name: string; email: string; message: string }>;
     };

@@ -38,26 +38,34 @@ export async function POST(request: Request) {
   const summary = await getStudentPerformanceSummary(supabase, studentId);
   const { result, source } = await generateStudentInsight(studentProfile.full_name, summary);
 
-  await supabase.from("ai_insights").insert({
-    student_id: studentId,
-    risk_level: result.riskLevel,
-    weak_subjects: result.weakSubjects,
-    recommendations: result.recommendations,
-    summary: result.summary,
-    raw_response: { source },
-    generated_by: user.id,
-  });
+  const { data: inserted } = await supabase
+    .from("ai_insights")
+    .insert({
+      student_id: studentId,
+      risk_level: result.riskLevel,
+      weak_subjects: result.weakSubjects,
+      recommendations: result.recommendations,
+      summary: result.summary,
+      raw_response: { source, confidence: result.confidence, factors: result.factors, trend: result.trend },
+      generated_by: user.id,
+    })
+    .select("id, generated_at")
+    .single();
 
   return NextResponse.json({
+    insightId: inserted?.id ?? null,
     riskLevel: result.riskLevel,
     weakSubjects: result.weakSubjects,
     recommendations: result.recommendations,
     summary: result.summary,
+    confidence: result.confidence,
+    factors: result.factors,
+    trend: result.trend,
     source,
     attendanceRate: summary.attendanceRate,
     overallAssignmentAvgPercent: summary.overallAssignmentAvgPercent,
     overallExamAvgPercent: summary.overallExamAvgPercent,
     subjects: summary.subjects,
-    generatedAt: new Date().toISOString(),
+    generatedAt: inserted?.generated_at ?? new Date().toISOString(),
   });
 }

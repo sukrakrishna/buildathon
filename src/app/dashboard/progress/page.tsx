@@ -2,13 +2,15 @@ import { redirect } from "next/navigation";
 import { CalendarCheck, ClipboardList, GraduationCap, TrendingUp } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getStudentPerformanceSummary } from "@/lib/data/academics";
+import { getInsightHistory, getStudentPerformanceSummary } from "@/lib/data/academics";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StatTile } from "@/components/dashboard/stat-tile";
 import { SubjectPerformanceChart } from "@/components/dashboard/subject-performance-chart";
-import { InsightPanel, type InsightData } from "@/components/ai/insight-panel";
+import { InsightPanel } from "@/components/ai/insight-panel";
+import { toInsightData } from "@/lib/ai/insight-mapper";
+import { RiskHistoryTimeline } from "@/components/ai/risk-history-timeline";
 
 export const metadata = { title: "My Progress" };
 
@@ -19,24 +21,12 @@ export default async function ProgressPage() {
   const supabase = await createClient();
   const summary = await getStudentPerformanceSummary(supabase, id);
 
-  const { data: latestInsight } = await supabase
-    .from("ai_insights")
-    .select("*")
-    .eq("student_id", id)
-    .order("generated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [{ data: latestInsight }, history] = await Promise.all([
+    supabase.from("ai_insights").select("*").eq("student_id", id).order("generated_at", { ascending: false }).limit(1).maybeSingle(),
+    getInsightHistory(supabase, id),
+  ]);
 
-  const initialInsight: InsightData | null = latestInsight
-    ? {
-        riskLevel: latestInsight.risk_level,
-        weakSubjects: latestInsight.weak_subjects,
-        recommendations: latestInsight.recommendations,
-        summary: latestInsight.summary ?? "",
-        generatedAt: latestInsight.generated_at,
-        source: (latestInsight.raw_response as { source?: "ai" | "fallback" } | null)?.source,
-      }
-    : null;
+  const initialInsight = latestInsight ? toInsightData(latestInsight) : null;
 
   if (summary.subjects.length === 0) {
     return (
@@ -100,8 +90,9 @@ export default async function ProgressPage() {
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-2">
-          <InsightPanel initialInsight={initialInsight} />
+        <div className="space-y-4 lg:col-span-2">
+          <InsightPanel studentId={id} studentName={profile.full_name} initialInsight={initialInsight} />
+          <RiskHistoryTimeline entries={history} />
         </div>
       </div>
     </div>

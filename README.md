@@ -1,23 +1,25 @@
 # EduPortal
 
-**An education management platform with an AI engine that reads a student's attendance, assignments, and exam scores and tells you — in plain language — who's at risk and what to do about it.**
+**An AI early-warning system for schools: it doesn't just manage courses and grades — it detects which students are falling behind, explains the evidence, generates a personalized intervention plan, and lets teachers track it to completion.**
 
 ## The problem
 
-Schools track attendance in one tool, grades in a spreadsheet, and assignments somewhere else — so nobody notices a struggling student until report cards go out. Teachers and admins are left manually cross-referencing numbers to spot who needs help, and students get generic advice instead of feedback tied to their actual performance.
+Schools track attendance in one tool, grades in a spreadsheet, and assignments somewhere else — so nobody notices a struggling student until report cards go out. Teachers and admins are left manually cross-referencing numbers to spot who needs help, and even when they do, "this student is struggling" isn't the same as knowing what to actually do about it.
 
 ## The solution
 
-EduPortal puts courses, attendance, assignments, exams, and grades in one role-based platform (student / teacher / admin) — and layers an AI engine on top that continuously analyzes each student's real data to:
+EduPortal runs one continuous loop for every student: **Risk → Explain → Intervene → Track.**
 
-- Flag risk level (low / medium / high) with a plain-language reason
-- Identify specific weak subjects, not just an overall grade
-- Generate personalized, actionable study recommendations
-- Roll all of it up into system-wide monitoring for admins and exportable PDF reports
+1. **Risk** — attendance, assignment, and exam data is aggregated and scored: low / medium / high risk, with a confidence level based on how much data actually exists.
+2. **Explain** — an evidence table (real computed numbers, not AI-invented ones) and a plain-language cause-and-effect explanation: *"Ethan is at high risk primarily because attendance is at 61% while Intro to Algorithms sits at 46%."*
+3. **Intervene** — one click generates a personalized 7-day intervention plan targeting the specific weak subject.
+4. **Track** — teachers check off plan tasks as the student completes them, and a risk-history timeline shows whether the intervention is working.
+
+Courses, attendance, assignments, exams, and a full admin console exist to feed this loop real data — not as separate disconnected features.
 
 ## Why it matters
 
-Early intervention only works if you know who needs it. By turning raw academic records into a risk signal and a recommendation — automatically, for every student — EduPortal gives teachers and admins the same kind of early-warning system large institutions build custom analytics teams for, without the analytics team.
+Early intervention only works if you know who needs it *and* what to do next. Most "AI-powered" school tools stop at a risk score. EduPortal turns that score into evidence a teacher can trust, a concrete plan, and a way to track whether the plan worked — the same loop a school would build a dedicated intervention program around, generated automatically for every student.
 
 ## Main features
 
@@ -27,7 +29,7 @@ Early intervention only works if you know who needs it. By turning raw academic 
 
 **Academic flow** — teachers mark attendance per class/session, create and grade assignments (with instant AI feedback on submission), create exams and enter grades; students view all of it and submit work from their own dashboard.
 
-**AI Engine** — the centerpiece. A dedicated API route sends a student's aggregated performance data to Claude and gets back structured risk analysis and recommendations, rendered as a clean insight card — not a wall of text. See [AI technology used](#ai-technology-used) below.
+**AI Risk Center** — the centerpiece. Risk level with a confidence score, a computed evidence table (attendance/assignment/exam factors, color-coded), a performance trend, a risk-history timeline, weak-subject detection, AI-generated recommendations, and a generated 7-day intervention plan with trackable tasks. See [AI technology used](#ai-technology-used) below.
 
 **Admin console** — manage students, teachers, courses, and classes; a system-wide AI monitoring dashboard showing risk distribution and every flagged student across the school; comparative class/system performance reports.
 
@@ -36,10 +38,31 @@ Early intervention only works if you know who needs it. By turning raw academic 
 ## AI technology used
 
 - **Model:** Claude (Anthropic API), called server-side only — the key never reaches the client.
-- **What it analyzes:** a student's attendance rate, per-subject assignment averages, exam averages, and recent submission/grade history, aggregated server-side before the prompt is built.
-- **What it returns:** strict structured JSON — `{ riskLevel, weakSubjects[], recommendations[], summary }` — validated against a schema before being trusted or stored.
-- **Graceful degradation:** if no API key is configured (or a call fails), the engine falls back to a rule-based analyzer that computes the same shape of output from the same real numbers, and the UI clearly labels which mode produced the result ("Generated by Claude" vs. "Rule-based analysis") — it never claims AI output that isn't.
+- **Evidence is computed, not generated.** The risk factors (attendance %, assignment average, exam average, per-subject divergence), the performance trend (recent vs. prior period), and the confidence score (scaled by how much real data exists for that student) are all deterministic functions over stored records (`src/lib/ai/evidence.ts`). Claude never sees an empty canvas and never gets to invent a number that ends up in the evidence table — it only ever writes the narrative explanation and recommendations, always grounded in the evidence it's handed.
+- **What it returns:** strict structured JSON — `{ riskLevel, weakSubjects[], recommendations[], summary }` — validated against a Zod schema before being trusted or stored. The evidence fields are merged in afterward from the computed layer, not parsed out of the model's response.
+- **Intervention plans** use the same pattern: a second Claude call (`src/lib/ai/intervention.ts`) generates a 7-day plan targeting the student's weakest subject, again schema-validated, with a sensible templated fallback when no key is configured.
+- **Graceful degradation:** if no API key is configured (or a call fails), both the insight and the intervention plan fall back to a rule-based generator that produces the same shape of output from the same real numbers. The UI always labels which mode produced the result ("Generated by Claude" vs. "Rule-based analysis") — it never claims AI output that isn't.
 - **Also AI-powered:** instant feedback on assignment submissions, and a rotating "AI Study Tips" widget on the homepage (cached, so it isn't regenerating on every visitor).
+
+## Responsible AI
+
+- **Early-warning signal, not a final judgment.** Every Risk Center panel carries this disclaimer explicitly — risk levels are a prompt for a teacher to look closer, not an automated verdict on a student.
+- **Human-in-the-loop.** The AI never contacts a student or takes action on its own. It surfaces evidence and drafts a plan; a teacher (or the student) chooses whether to generate it, and a teacher tracks whether it's followed.
+- **Evidence over inference.** As above — the numbers a teacher sees are always real, computed values, never something the model could hallucinate.
+- **Data minimization.** The AI receives only the aggregated performance data required for the analysis (attendance %, subject averages, recent scores) — not raw PII beyond the student's name, and never another student's data.
+- **Role-based access, enforced at the database.** Row Level Security means a student can only ever read their own records; a teacher only their own students'; the boundary is enforced by Postgres, not just application code.
+
+## How we tested the AI
+
+Before seeding demo data, we validated the risk-detection logic against three deliberately-constructed scenarios spanning the range it needs to handle correctly:
+
+| Scenario | Profile | Expected risk | Result |
+|---|---|---|---|
+| Strong student | ~95% attendance, high assignment/exam scores across all subjects | Low | ✅ |
+| Mixed performance | Strong in one subject, ~68% attendance and failing scores in another | Medium, with the weak subject correctly isolated (not averaged away by the strong one) | ✅ |
+| Consistently struggling | ~60% attendance, failing scores across every enrolled subject | High, flagged in every subject | ✅ |
+
+These aren't hypothetical — they're real seeded students in the demo dataset with real attendance/assignment/exam rows, run through the actual production code path (`getStudentPerformanceSummary` → `generateStudentInsight`), not a mocked test harness.
 
 ## Architecture
 
@@ -51,11 +74,12 @@ Next.js 16 (App Router, Server Components + Server Actions)
   │                                   │
   ▼                                   ▼
 Supabase (Postgres + Auth + RLS)     Anthropic API (Claude)
-  - profiles, courses, classes,       - /api/ai-insights route
-    enrollments, attendance,            aggregates a student's
-    assignments, submissions,           data → prompt → structured
-    exams, grades, ai_insights          JSON → stored + rendered
-  - Row Level Security enforces
+  - profiles, courses, classes,       - /api/ai-insights aggregates
+    enrollments, attendance,            a student's data → computes
+    assignments, submissions,           evidence → prompt → structured
+    exams, grades                       JSON → merged + stored
+  - ai_insights, intervention_plans   - lib/ai/intervention.ts drafts
+  - Row Level Security enforces         a 7-day plan the same way
     student/teacher/admin visibility
     at the database layer, not just
     in application code

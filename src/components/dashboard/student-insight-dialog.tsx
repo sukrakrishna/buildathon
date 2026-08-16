@@ -18,7 +18,7 @@ export function StudentInsightDialog({ studentId, studentName }: { studentId: st
         <DialogHeader>
           <DialogTitle>{studentName}'s AI insight</DialogTitle>
         </DialogHeader>
-        {open && <InsightPanel studentId={studentId} initialInsight={null} canRegenerate />}
+        {open && <InsightPanel studentId={studentId} studentName={studentName} initialInsight={null} canRegenerate />}
       </DialogContent>
     </Dialog>
   );

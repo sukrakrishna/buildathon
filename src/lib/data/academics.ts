@@ -174,6 +174,23 @@ export async function getClassPerformanceSummary(supabase: DbClient, classId: st
   };
 }
 
+export interface InsightHistoryEntry {
+  id: string;
+  riskLevel: "low" | "medium" | "high";
+  generatedAt: string;
+}
+
+export async function getInsightHistory(supabase: DbClient, studentId: string, limit = 6): Promise<InsightHistoryEntry[]> {
+  const { data } = await supabase
+    .from("ai_insights")
+    .select("id, risk_level, generated_at")
+    .eq("student_id", studentId)
+    .order("generated_at", { ascending: true })
+    .limit(limit);
+
+  return (data ?? []).map((row) => ({ id: row.id, riskLevel: row.risk_level, generatedAt: row.generated_at }));
+}
+
 export interface SubjectPerformance {
   classId: string;
   subject: string;
